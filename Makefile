@@ -9,6 +9,9 @@ html-nohighlight:
 sparse:
 	perl6 htmlify.p6 --no-highlight --sparse=10
 
+installdeps:
+	panda installdeps .
+
 test:
 	prove --exec perl6 -r t
 

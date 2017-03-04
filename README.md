@@ -18,6 +18,12 @@ to see the documentation for class `Str`, or
 to see the documentation for method `split` in class `Str`.
 
 --------
+## Setting up the doc build system
+
+Before building the HTML documentation, install the needed
+dependencies. This requires Panda to be installed.
+
+    $ make installdeps
 
 ## Building the HTML documentation
 
