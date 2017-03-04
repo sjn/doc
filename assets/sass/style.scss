@@ -1,3 +1,6 @@
+@import 'jquery-ui';
+@import 'highlights';
+
 html, body {
     margin: 0;
     background: #EFEFEF!important;
@@ -28,7 +31,7 @@ body {
 }
 
 pre {
-    background-color: #DFDFDF;
+    background-color: #F5F2F0;
     border: 1px solid #CFCFCF;
     padding: 0.6ex;
     color: black;
@@ -39,6 +42,10 @@ pre {
 
 code {
     color: #666;
+}
+
+a code {
+    color: #00e;
 }
 
 pre {
@@ -57,14 +64,14 @@ img, svg {
     max-width: 100%;
 }
 
-tr:nth-child(odd) {
-    background-color: #F5EF7B;
+table.pod-table tr:nth-child(odd) {
+    background-color: #f8f8f8;
 }
-tr:nth-child(even) {
+table.pod-table tr:nth-child(even) {
     background-color: none;
 }
 
-td {
+td, th {
     padding: 0.4em;
 
     p {
@@ -182,6 +189,8 @@ td {
 }
 
 #search {
+    text-align: right;
+
     label {
         float: left;
         font-size: 1.25em;
@@ -189,26 +198,57 @@ td {
 
     div {
         overflow: hidden;
+/*
         border-width: 0.1em;
         border-style: solid;
         border-radius: 0.5em;
         padding: 0 0.5em;
         background-color: #FFFFFF;
+*/
     }
 }
 
 #query {
     outline: none;
-    border: none;
+
+    border-width: 0.1em;
+    border-style: solid;
+    border-radius: 0.5em;
+    border-color: #8BC313;
+
     margin: 0;
-    padding: 0;
-    width: 100%;
-    background: none;
+    padding: 0.25em 0.5em 0.25em 0.5em;
+    width: 95%;
+    background-color: #FFFFFF;
     color: #777777;
+
+    -webkit-transition: all .2s ease-out;
+    -moz-transition: all .2s ease-out;
+    -ms-transition: all .2s ease-out;
+    -o-transition: all .2s ease-out;
+    transition: all .2s easeout;
 }
 
 #query:focus {
     color: #000000;
+    text-align: left;
+    width: 95%;
+}
+
+#query::input-placeholder {
+    text-align: right;
+}
+
+#query::-moz-placeholder {
+    text-align: right;
+}
+
+#query::-webkit-placeholder {
+    text-align: right;
+}
+
+#query::-ms-placeholder {
+    text-align: right;
 }
 
 .ui-autocomplete-category {
@@ -218,12 +258,15 @@ td {
     padding: 2px 5px;
     line-height: 1.5;
 }
+
+.ui-state-active,
 .ui-state-focus {
     font-weight: normal !important; /* override css/custom-theme/jquery-ui.css */
     font-style: italic;
 }
 .ui-menu .ui-menu-item {
-    padding-left: 1em !important; /* override css/custom-theme/jquery-ui.css */
+    /* override css/custom-theme/jquery-ui.css */
+    font-weight: normal;
 }
 
 .menu {
@@ -284,7 +327,7 @@ td {
     overflow: hidden;
     max-width: 800px;
     background: #FFFFFF;
-    background-image: url(/images/camelia-faded.png);
+//    background-image: url(/images/camelia-faded.png);
     background-repeat: no-repeat;
     background-position: right 2em top 2em;
 
@@ -312,6 +355,50 @@ td {
     p:nth-child(2) {
         margin-top: 0;
         padding-top: 0;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        a {
+            color: black;
+        }
+    }
+
+    h1 {
+        padding-top: 0.25em;
+    }
+}
+
+@media (min-width: 110em) {
+    /* #content:has(#TOC) {*/
+    #content {
+        max-width: none;
+        min-width: 60em;
+        width: 60em;
+        // overflow: visible;
+        // margin-left: 0em;
+        display: table;
+        background-image: none;
+    }
+    div.pod-body {
+        min-width: 60em;
+        max-width: 60em;
+        margin-left: 22em;
+    }
+
+    div.pod-body.no-toc {
+        margin-left: 0em;
+    }
+
+    nav.indexgroup {
+        float: left;
+    }
+
+    table#TOC {
+        max-width: 20em;
+
+        a {
+            color: black;
+        }
     }
 }
 
@@ -343,14 +430,70 @@ footer.pretty-box {
     }
 }
 
-#TOC_title {
+#TOC_Title {
     font-size: 120%;
+    white-space: nowrap;
 
     a {
         font-weight: normal;
         font-size: 90%;
         outline: 0;
     }
+}
+
+table#TOC {
+    border-collapse: collapse;
+    margin: 0 0 0 12pt;
+
+    caption {
+        text-align: left;
+    }
+
+    tr {
+        background-color: transparent;
+    }
+
+    td {
+        padding: 0.25pt 5pt 0 0;
+        font-size: 11pt;
+    }
+
+    tr.toc-level-1:first-child td {
+        padding-top: 0;
+    }
+
+    td.toc-text {
+        position: relative;
+        left: 6pt;
+    }
+
+    tr.toc-level-1 {
+        td {
+            padding-top: 4pt;
+            font-weight: bold;
+        }
+
+        td.toc-text {
+            position: relative;
+            left: 0;
+        }
+    }
+
+    tr.toc-level-2 td {
+        padding-top: 3pt;
+    }
+
+    td.toc-number {
+        display: none;
+    }
+
+    code {
+        color: black;
+    }
+}
+
+div.highlight span.c-Singleline, div.highlight span.c {
+    color: #204040;
 }
 
 @media (max-width : 560px) {
@@ -385,9 +528,23 @@ footer.pretty-box {
         }
     }
 
-
     .menu-item.selected {
         box-shadow: none;
         border-radius: 3px;
     }
+
+    table#TOC {
+        tr[class^=toc-level] td {
+            padding: 8px 0;
+        }
+
+        tr.toc-level-1 td {
+            padding-top: 18px;
+        }
+    }
+}
+
+a[href*="//"]:not([href*="perl6.org"])::after {
+    padding-left: 2px;
+    content: url(/images/External-link-04-bold-12x12.svg);
 }

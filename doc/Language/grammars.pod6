@@ -1,4 +1,4 @@
-=begin pod
+=begin pod :tag<perl6>
 
 =TITLE Grammars
 
@@ -7,9 +7,9 @@
 Grammars are a powerful tool used to destructure text and often to return
 data structures that have been created by interpreting that text.
 
-For example, Perl 6 is parsed and executed using a Perl 6-style grammar.
+For example, Perl 6 is parsed and executed using a Perl 6-style grammar.
 
-An example that's more practical to the common Perl 6 user is the
+An example that's more practical to the common Perl 6 user is the
 L<JSON::Tiny module|https://github.com/moritz/json>, which can deserialize
 any valid JSON file, however the deserializing code is written in less than
 100 lines of simple, extensible code.
@@ -21,9 +21,9 @@ methods of regular code.
 =head1 X<Named Regexes|declarator,regex;declarator,token;declarator,rule>
 
 The main ingredient of grammars is named L<regexes|/language/regexes>.
-While the syntax of L<Perl 6 Regexes|/language/regexes> is outside the scope
+While the syntax of L<Perl 6 Regexes|/language/regexes> is outside the scope
 of this document, I<named> regexes have a special syntax, similar to
-subroutine definitions:N<In fact, named regexes can even take extra
+subroutine definitions: N<In fact, named regexes can even take extra
 arguments, using the same syntax as subroutine parameter lists>
 
     =begin code :allow<B>
@@ -36,12 +36,12 @@ the C<my> keyword, because named regexes are normally used within grammars.
 Being named gives us the advantage of being able to easily reuse the regex
 elsewhere:
 
-    =begin code :allow<B>
-    say "32.51" ~~ B<&number>;
-    say "15 + 4.5" ~~ /B<< <number> >>\s* '+' \s*B<< <number> >>/
+    =begin code :allow<B> :skip-test
+    say so "32.51" ~~ B<&number>;                                    # OUTPUT: «True␤»
+    say so "15 + 4.5" ~~ /B<< <number> >>\s* '+' \s*B<< <number> >>/ # OUTPUT: «True␤»
     =end code
 
-B<C<regex>> isn't the only declarator for named regexes -- in fact, it's the
+B<C<regex>> isn't the only declarator for named regexes – in fact, it's the
 least common. Most of the time, the B<C<token>> or B<C<rule>> declarators
 are used. These are both I<ratcheting>, which means that the match engine
 won't back up and try again if it fails to match something. This will
@@ -51,8 +51,8 @@ usually do what you want, but isn't appropriate for all cases:
     my regex works-but-slow { .+ q }
     my token fails-but-fast { .+ q }
     my $s = 'Tokens won\'t backtrack, which makes them fail quicker!';
-    say so $s ~~ &works-but-slow; # True
-    say so $s ~~ &fails-but-fast; # False, the entire string get taken by the .+
+    say so $s ~~ &works-but-slow; # OUTPUT: «True␤»
+    say so $s ~~ &fails-but-fast; # OUTPUT: «False␤», the entire string get taken by the .+
     =end code
 
 The only difference between the C<token> and C<rule> declarators is that the
@@ -62,8 +62,10 @@ into effect for the Regex:
     =begin code :allow<B>
     my token non-space-y { 'once' 'upon' 'a' 'time' }
     my rule space-y { 'once' 'upon' 'a' 'time' }
-    say 'onceuponatime'    ~~ &non-space-y;
-    say 'once upon a time' ~~ &space-y;
+    say so 'onceuponatime'    ~~ &non-space-y; # OUTPUT: «True␤»
+    say so 'once upon a time' ~~ &non-space-y; # OUTPUT: «False␤»
+    say so 'onceuponatime'    ~~ &space-y;     # OUTPUT: «False␤»
+    say so 'once upon a time' ~~ &space-y;     # OUTPUT: «True␤»
     =end code
 
 =head1 X<Creating Grammars|class,Grammar;declarator,grammar>
@@ -101,8 +103,7 @@ operations we we add:
 
     say Calculator.parse('2 + 3', actions => Calculations).made;
 
-    # OUTPUT:
-    # 5
+    # OUTPUT: «5␤»
 
 To make things better, we can use protoregexes that look like `C<< :sym<...> >>
 adverbs on tokens:
@@ -125,8 +126,7 @@ adverbs on tokens:
 
     say Calculator.parse('2 + 3', actions => Calculations).made;
 
-    # OUTPUT:
-    # 5
+    # OUTPUT: «5␤»
 
 In the grammar, the alternation has now been replaced with C<< <calc-op> >>,
 which is essentially the name of a group of values we'll create. We do so by
@@ -136,13 +136,14 @@ name of the alternation is attached with C<< :sym<> >> adverb.
 
 In the actions class, we now got rid of the ternary operator and simply take
 the C<.made> value from the C<< $<calc-op> >> match object. And the actions for
-individual alternations now follow the name naming pattern as in the grammar:
-C<< method calc-op:sym<add> >> and C<method calc-op:sym<sub> >>.
+individual alternations now follow the same naming pattern as in the grammar:
+C<< method calc-op:sym<add> >> and C<<method calc-op:sym<sub> >>.
 
 The real beauty of this method can be seen when you subclass that grammar
 and actions class. Let's say we want to add a multiplication feature to the
 calculator:
 
+    =begin code :skip-test
     grammar BetterCalculator is Calculator {
         rule calc-op:sym<mult> { <num> '*' <num> }
     }
@@ -153,8 +154,8 @@ calculator:
 
     say BetterCalculator.parse('2 * 3', actions => BetterCalculations).made;
 
-    # OUTPUT:
-    # 6
+    # OUTPUT: «6␤»
+    =end code
 
 All we had to add are additional rule and action to the C<calc-op> group and
 the thing works—all thanks to protoregexes.
@@ -191,10 +192,21 @@ Is the same as:
 
     token entry { <key> <.ws> ’=’ <.ws> <value> <.ws> } # . = non-capturing
 
-The default C<ws> matches "whitespace", such a sequence of spaces (of whatever
-type), newlines, unspaces, or heredocs.
+The default C<ws> matches one or more whitespace characters (C<\s>) or a
+word boundary (C«<|w>»):
 
-It's perfectly fine to provide your own C<ws> token:
+    # First <.ws> matches word boundary at the start of the line
+    # and second <.ws> matches the whitespace between 'b' and 'c'
+    say 'ab   c' ~~ /<.ws> ab <.ws> c /; # OUTPUT: «｢ab   c｣␤»
+
+    # Failed match: there is neither any whitespace nor a word
+    # boundary between 'a' and 'b'
+    say 'ab' ~~ /. <.ws> b/;             # OUTPUT: «Nil␤»
+
+    # Successful match: there is a word boundary between ')' and 'b'
+    say ')b' ~~ /. <.ws> b/;             # OUTPUT: «｢)b｣␤»
+
+You can also redefine the default C<ws> token:
 
     grammar Foo {
         rule TOP { \d \d }
@@ -214,7 +226,7 @@ token, it can be used to trigger an Action class method. In the following
 grammar we look for Arabic digits and define a C<succ> token with the always
 succeed assertion.
 
-In the action class, we use calles to the C<succ> method to do set up (in this
+In the action class, we use calls to the C<succ> method to do set up (in this
 case, we prepare a new element in C<@!numbers>). In the C<digit> method,
 we convert an Arabic digit into a Devanagari digit and add it to the last
 element of C<@!numbers>. Thanks to C<succ>, the last element will always be
@@ -236,8 +248,7 @@ the number for the currently parsed C<digit> digits.
     }
 
     say Digifier.parse('255 435 777', actions => Devanagari.new).made;
-    # OUTPUT:
-    # (२५५ ४३५ ७७७)
+    # OUTPUT: «(२५५ ४३५ ७७७)␤»
 
 =head2 Methods in Grammar
 
@@ -255,15 +266,16 @@ as they return a L</type/Cursor>:
 The grammar above will attempt different matches depending on the arguments
 provided by parse methods:
 
+    =begin code :skip-test
     say +DigitMatcher.subparse: '12७१७९०९', args => \(:full-unicode);
-    # OUTPUT:
-    # 12717909
+    # OUTPUT: «12717909␤»
 
     say +DigitMatcher.subparse: '12७१७९०९', args => \(:!full-unicode);
-    # OUTPUT:
-    # 12
+    # OUTPUT: «12␤»
+    =end code
 
 =head1 Action Objects
+X<|Actions>
 
 A successful grammar match gives you a parse tree of L<Match|/type/Match>
 objects, and the deeper that match tree gets, and the more branches in the
@@ -279,7 +291,7 @@ argument. If no such method exists, it is skipped.
 Here is a contrived example of a grammar and actions in action:
 
 =begin code
-use v6;
+use v6.c;
 
 grammar TestGrammar {
     token TOP { \d+ }
@@ -293,8 +305,8 @@ class TestActions {
 
 my $actions = TestActions.new;
 my $match = TestGrammar.parse('40', :$actions);
-say $match;         # ｢40｣
-say $match.made;    # 42
+say $match;         # OUTPUT: «｢40｣␤»
+say $match.made;    # OUTPUT: «42␤»
 =end code
 
 An instance of C<TestActions> is passed as named argument C<actions> to the
@@ -311,7 +323,7 @@ for C<< $/<capture> >>).
 A slightly more involved example follows:
 
 =begin code
-use v6;
+use v6.c;
 
 grammar KeyValuePairs {
     token TOP {
@@ -346,7 +358,7 @@ for @$res -> $p {
 
 This produces the following output:
 
-=begin code
+=begin code :skip-test
 Key: second     Value: b
 Key: hits       Value: 42
 Key: perl       Value: 6

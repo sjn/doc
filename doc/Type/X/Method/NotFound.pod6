@@ -4,19 +4,20 @@
 
 =SUBTITLE Error due to calling a method that isn't there
 
-    class X::Method::NotFound is Exception
+    class X::Method::NotFound is Exception {}
 
 Thrown when the user tries to call a method that isn't there.
 
-For example C<1.nosuch> dies with
+For example C<1.no-such> dies with
 
-    No such method 'nosuch' for invocant of type 'Int'
+=for code :skip-test
+No such method 'no-such' for invocant of type 'Int'
 
 =head1 Methods
 
 =head2 method method
 
-    method method() returns Str:D
+    method method(--> Str:D)
 
 Returns the method name that was invoked.
 
@@ -28,7 +29,7 @@ Returns the name of the invocant type.
 
 =head2 method private
 
-    method private returns Bool:D
+    method private(--> Bool:D)
 
 Returns C<True> for private methods, and C<False> for public methods.
 

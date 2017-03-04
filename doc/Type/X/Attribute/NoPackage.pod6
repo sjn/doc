@@ -11,18 +11,20 @@ not make sense (for example in the mainline).
 
 For example
 
-    has $.x;
+=for code :skip-test
+has $.x;
 
 Dies with
 
-    ===SORRY!===
-    You cannot declare attribute '$.x' here; maybe you'd like a class or a role?
+=for code :skip-test
+===SORRY!===
+You cannot declare attribute '$.x' here; maybe you'd like a class or a role?
 
 =head1 Methods
 
 =head2 method name
 
-    method name() returns Str:D
+    method name(--> Str:D)
 
 Returns the name of the attribute
 

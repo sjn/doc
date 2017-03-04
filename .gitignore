@@ -2,6 +2,9 @@
 index.data
 *~
 html/*.html
+html/css/style.css
+html/css/style.css.map
+html/perl6.xhtml
 html/routine/
 html/type/
 html/op/
@@ -14,3 +17,10 @@ html/js/search.js
 precompiled
 assets/assetpack.db
 assets/cache
+.sass-cache/
+html/css/style.css.map
+html/links.txt
+xt/aspell.pws
+highlights/node_modules
+**/npm-debug.log
+highlights/atom-language-perl6/

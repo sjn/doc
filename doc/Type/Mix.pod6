@@ -19,21 +19,23 @@ element, with a combined weight.
 
 =begin code
 my $recipe = (butter => 0.22, sugar => 0.1,
-              flour => 0.275, sugar => 0.02).Mix
+              flour => 0.275, sugar => 0.02).Mix;
 
-say $recipe.elems;      # 3
-say $recipe.keys.sort;  # butter flour sugar
-say $recipe.pairs.sort; # "butter" => 0.22 "flour" => 0.275 "sugar" => 0.12
-say $recipe.total;      # 0.615
+say $recipe.elems;      # OUTPUT: «3␤»
+say $recipe.keys.sort;  # OUTPUT: «butter flour sugar␤»
+say $recipe.pairs.sort; # OUTPUT: «"butter" => 0.22 "flour" => 0.275 "sugar" => 0.12␤»
+say $recipe.total;      # OUTPUT: «0.615␤»
 =end code
 
 C<Mix>es can be treated as object hashes using the C<{ }> postcircumfix
 operator, which returns the corresponding numeric weight for keys that are
 elements of the mix, and C<0> for keys that aren't:
 
-    say $recipe<butter>;     # 0.22
-    say $recipe<sugar>;      # 0.12
-    say $recipe<chocolate>;  # 0
+    my $recipe = (butter => 0.22, sugar => 0.1,
+                  flour => 0.275, sugar => 0.02).Mix;
+    say $recipe<butter>;     # OUTPUT: «0.22␤»
+    say $recipe<sugar>;      # OUTPUT: «0.12␤»
+    say $recipe<chocolate>;  # OUTPUT: «0␤»
 
 =head1 Creating C<Mix> objects
 
@@ -43,8 +45,8 @@ type, become elements of the mix - with a weight of C<1> for each time the
 parameter occurred:
 
     my $n = mix "a", "a", "b" => 0, "c" => 3.14;
-    say $n.keys.map(&WHAT);  # (Str) (Pair) (Pair)
-    say $n.pairs;            # "a" => 2 ("b" => 0) => 1 ("c" => 3.14) => 1
+    say $n.keys.map(&WHAT);  # OUTPUT: «((Str) (Pair) (Pair))␤»
+    say $n.pairs;            # OUTPUT: «(a => 2 (c => 3.14) => 1 (b => 0) => 1)␤»
 
 Alternatively, the C<.Mix> coercer (or its functional form, C<Mix()>) can be
 called on an existing object to coerce it to a C<Mix>. Its semantics depend on
@@ -54,8 +56,8 @@ Hash-like objects or Pair items, only the keys become elements of the mix, and
 the (cumulative) values become the associated numeric weights:
 
     my $n = ("a", "a", "b" => 0, "c" => 3.14).Mix;
-    say $n.keys.map(&WHAT);  # (Str) (Str)
-    say $n.pairs;            # "a" => 2 "c" => 3.14
+    say $n.keys.map(&WHAT);  # OUTPUT: «((Str) (Str))␤»
+    say $n.pairs;            # OUTPUT: «(a => 2 c => 3.14)␤»
 
 =head1 Operators
 
@@ -71,6 +73,28 @@ with detailed explanations.
     sub mix(*@args --> Mix)
 
 Creates a new C<Mix> from C<@args>.
+
+=head1 Methods
+
+=head2 method Bag
+
+Defined as:
+
+    method Bag (--> Bag:D)
+
+Coerces the C<Mix> to a L«C<Bag>|/type/Bag». The weights are convert to L«C<Int>|/type/Int»,
+which means the number of keys in the resulting C<Bag> can be fewer than in the
+original C<Mix>, if any of the weights are negative or truncate to zero.
+
+=head2 method BagHash
+
+Defined as:
+
+    method BagHash (--> BagHash:D)
+
+Coerces the C<Mix> to a L«C<BagHash>|/type/BagHash». The weights are convert to L«C<Int>|/type/Int»,
+which means the number of keys in the resulting C<BagHash> can be fewer than in the
+original C<Mix>, if any of the weights are negative or truncate to zero.
 
 =head1 See Also
 

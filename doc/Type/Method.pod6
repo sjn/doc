@@ -6,11 +6,58 @@
 
     class Method is Routine { }
 
-A type for methods. To create a method, use the C<method> keyword:
+A type for methods that behave the same way then L<Routine|/type/Routine> with
+some exceptions listed in the following. For details of a methods parameter
+list see L<Signature|/type/Signature>.
+
+To create a method outside a L<class definition|/language/typesystem#Methods>,
+use the declarators C<my> and C<method>. If an
+L<identifier|/language/syntax#Identifiers> is provided the methods name will be
+injected into the scope specified by the declarator.
 
     my $m = method ($invocant: $param) {
         say "$invocant: '$param'";
     }
     "greeting".$m("hello");         # greeting: 'hello'
+
+    <a b c>.&(my method (List:D:){dd self; self}).say;
+    # OUTPUT: «("a", "b", "c")␤(a b c)␤»
+
+The invocant of a method defaults to C<self>. A type constraint including a
+type-smiley can be used and is honored both for methods defined in a class and
+for free floating methods. Call the latter with C<.&> on an object.
+
+    my method m(Int:D: $b){
+        say self.^name
+    }
+    my $i = 1;
+    $i.&m(<a>);
+    # OUTPUT: «Int␤»
+
+X<|extra named arguments>
+Methods will ignore extra named arguments where other types of C<Routine> will
+throw at runtime. Extra arguments will be forwarded by
+L<nextsame|/language/functions#index-entry-nextsame-nextsame> and friends.
+
+    class A {
+        multi method m(:$a, :$b) { say "2 named" }
+    }
+
+    class B is A {
+        method m(:$a) { say "1 named"; nextsame }
+    }
+    B.m( :1a, :2b );
+    # OUTPUT: «1 named␤2 named␤»
+
+=head2 sub lastcall
+
+    sub lastcall(--> True)
+
+To stop dispatch in a multi method chain of the current class call C<lastcall>.
+Any call for L<nextsame|/language/functions#index-entry-nextsame-nextsame> and
+friends will continue in the next dispatcher loop (typically a parent class)
+after C<lastcall> is called. Please note that C<lastcall> appears to be a sub
+it acts more like a L<control|/language/control> statement and will always
+operate on the current scope.
 
 =end pod

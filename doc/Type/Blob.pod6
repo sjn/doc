@@ -17,11 +17,9 @@ Defined as:
 
     method new(*@codes)
 
-Usage:
-
-    $blob = Blob.new(LIST)
-
 Creates a C<Blob> from a list of integers.
+
+    my $blob = Blob.new([1, 2, 3]);
 
 =head2 method Bool
 
@@ -29,60 +27,69 @@ Defined as:
 
     multi method Bool(Blob:D:)
 
-Usage:
-
-    BLOB.Bool
-
 Returns C<False> if and only if the buffer is empty.
+
+    my $blob = Blob.new();
+    say $blob.Bool; # OUTPUT: «False␤»
+    $blob = Blob.new([1, 2, 3]);
+    say $blob.Bool; # OUTPUT: «True␤»
 
 =head2 method elems
 
 Defined as:
 
-    multi method elems(Blob:D:) returns Int:D
-
-Usage:
-
-    BLOB.elems
+    multi method elems(Blob:D: --> Int:D)
 
 Returns the number of elements of the buffer.
+
+    my $blob = Blob.new([1, 2, 3]);
+    say $blob.elems; # OUTPUT: «3␤»
+
+=head2 method bytes
+
+Defined as:
+
+    method bytes(Blob:D: --> Int:D)
+
+Returns the number of bytes used by the elements in the buffer.
+
+    say Blob.new([1, 2, 3]).bytes;      # OUTPUT: «3␤»
+    say blob16.new([1, 2, 3]).bytes;    # OUTPUT: «6␤»
+    say blob64.new([1, 2, 3]).bytes;    # OUTPUT: «24␤»
 
 =head2 method decode
 
 Defined as:
 
-    multi method decode(Blob:D: Str:D $encoding = 'UTF-8') returns Str:D
-
-Usage:
-
-    BLOB.decode(ENCODING?)
+    multi method decode(Blob:D: Str:D $encoding = 'UTF-8' --> Str:D)
 
 Applies an encoding to turn the blob into a L<Str|/type/Str>.
+
+    my Blob $blob = "string".encode('utf-8');
+    say $blob.decode('utf-8'); # OUTPUT: «string␤»
+
+On malformed utf-8 C<.decode> will throw X::AdHoc. To handle sloppy utf-8 use
+C<utf8-c8>.
 
 =head2 method subbuf
 
 Defined as:
 
-    method subbuf(Int $from, Int $len = self.elems) returns Blob:D
-    method subbuf(Range $range) returns Blob:D
-
-Usage:
-
-    BLOB.subbuf(FROM, LENGTH?)
-    BLOB.subbuf(RANGE)
+    multi method subbuf(Int $from, Int $len = self.elems --> Blob:D)
+    multi method subbuf(Range $range --> Blob:D)
 
 Extracts a part of the invocant buffer, starting from the index with
 elements C<$from>, and taking C<$len> elements (or less if the buffer is
 shorter), and creates a new buffer as the result.
 
-    say Blob.new(1..10).subbuf(2, 4);    # Blob:0x<03 04 05 06>
-    say Blob.new(1..10).subbuf(*-2);     # Blob:0x<09 0a>
-    say Blob.new(1..10).subbuf(*-5,2);   # Blob:0x<06 07>
+    say Blob.new(1..10).subbuf(2, 4);    # OUTPUT: «Blob:0x<03 04 05 06>␤»
+    say Blob.new(1..10).subbuf(*-2);     # OUTPUT: «Blob:0x<09 0a>␤»
+    say Blob.new(1..10).subbuf(*-5,2);   # OUTPUT: «Blob:0x<06 07>␤»
 
 For convenience, also allows a C<Range> to be specified to indicate which
 part of the invocant buffer you would like:
 
-    say Blob.new(1..10).subbuf(2..5);    # Blob:0x<03 04 05 06>
+    say Blob.new(1..10).subbuf(2..5);    # OUTPUT: «Blob:0x<03 04 05 06>␤»
 
 =head2 method unpack
 
@@ -93,11 +100,7 @@ This method is considered B<experimental>, in order to use it you will need to d
 
 Defined as:
 
-    method unpack(Blob:D: $template) returns List:D
-
-Usage:
-
-    BLOB.unpack(TEMPLATE)
+    method unpack(Blob:D: $template --> List:D)
 
 Extracts features from the blob according to the template string, and
 returns them as a list.
@@ -132,14 +135,20 @@ The following letters are recognized:
 
 =end table
 
+Example:
+
+    use experimental :pack;
+    say Blob.new(1..10).unpack("C*");
+    # OUTPUT: «(1 2 3 4 5 6 7 8 9 10)␤»
+
 =head2 sub pack
 
 This subroutine is considered B<experimental>,  in order to use it you will need to do:
 
-    use experimental :pack;
-
-
-    sub pack(Str $template, *@items) returns Buf
+=begin code :skip-test
+use experimental :pack;
+    sub pack(Str $template, *@items --> Buf)
+=end code
 
 Packs the given items according to the template and returns a buffer
 containing the packed bytes.

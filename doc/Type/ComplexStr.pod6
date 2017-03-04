@@ -4,21 +4,24 @@
 
 =SUBTITLE Dual Value Complex number and String
 
-    class ComplexStr is Complex is Str
+    class ComplexStr is Complex is Str {}
 
 The dual value types (often referred to as L<allomorphs|/language/glossary#Allomorph>)
 allow for the representation of a value as both a string and a numeric type, typically
 they will be created for you when the context is "stringy" but they can be determined
 to be numbers, such as in some L<quoting constructs|/language/quoting>:
 
-    my $f = <42+0i>; say $f.WHAT; # (ComplexStr)
+    my $f = <42+0i>; say $f.WHAT; # OUTPUT: «(ComplexStr)␤»
 
-A C<ComplexStr> can be used interchangeably where one might use a L<Str|/type/Str> or a
-L<Complex|/type/Complex> :
+As a subclass of both L«C<Complex>|/type/Complex» and L«C<Str>|/type/Str»,
+a C<ComplexStr> will be accepted where either is expected. However,
+C<ComplexStr> does not share object identity with C<Complex>- or C<Str>-only
+variants:
 
-    my $f = <42+0i>;
-    my $i = $f + 0.1;
-    my $s = $f ~ " and a bit more";
+    my $complex-str = < 42+0i >;
+    my Complex $complex = $complex-str; # OK!
+    my Str     $str     = $complex-str; # OK!
+    say 42+0i ∈ <42+0i  55  1>; # False; ∈ operator cares about object identity
 
 =head1 Methods
 
@@ -30,8 +33,8 @@ The constructor requires both the C<Complex> and the C<Str> value, when construc
 directly the values can be whatever is required:
 
     my $f = ComplexStr.new(42+0i, "forty two (but complicated)");
-    say +$f; # -> 42+0i
-    say ~$f; # -> "forty two (but complicated)"
+    say +$f; # OUTPUT: «42+0i␤»
+    say ~$f; # OUTPUT: «"forty two (but complicated)"␤»
 
 =head2 method Numeric
 
@@ -63,8 +66,8 @@ coerce to the C<Complex> or C<Str> values first:
 
     my $f = ComplexStr.new(42+0i, "smaller");
     my $g = ComplexStr.new(43+0i, "larger");
-    say $f cmp $g;          # Less
-    say $f.Str cmp $g.Str;  # More
+    say $f cmp $g;          # OUTPUT: «Less␤»
+    say $f.Str cmp $g.Str;  # OUTPUT: «More␤»
 
 =end pod
 

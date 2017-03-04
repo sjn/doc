@@ -11,18 +11,20 @@ potentially through aliases.
 
 For example
 
-    sub f(:$a, :a(:@b)) { }
+=for code :skip-test
+sub f(:$a, :a(:@b)) { }
 
 dies with
 
-    ===SORRY!===
-    Name a used for more than one named parameter
+=for code :skip-test
+===SORRY!===
+Name a used for more than one named parameter
 
 =head1 Methods
 
 =head2 method name
 
-    method name() returns Str:D
+    method name(--> Str:D)
 
 Returns the name that was used for more than one parameter.
 

@@ -6,36 +6,38 @@
 
     class X::Obsolete does X::Comp { }
 
-Syntax error thrown when obsolete (mostly Perl 5) syntax is detected.
+Syntax error thrown when obsolete (mostly Perl 5) syntax is detected.
 
 For example
 
-    m/abc/i
+=for code :skip-test
+m/abc/i
 
 dies with
 
-    ===SORRY!===
-    Unsupported use of /i; in Perl 6 please use :i
+=for code :skip-test
+===SORRY!===
+Unsupported use of /i; in Perl 6 please use :i
 
 =head1 Methods
 
 =head2 method old
 
-    method old() returns Str:D
+    method old(--> Str:D)
 
 Returns a textual description of the obsolete syntax construct
 
 =head2 method replacement
 
-    method replacement() returns Str:D
+    method replacement(--> Str:D)
 
 Describes what to use instead of the obsolete syntax.
 
 =head2 method when
 
-    method when() returns Str:D
+    method when(--> Str:D)
 
 Returns a string describing the state of the language (usually
-C<" in Perl 6">).
+C<" in Perl 6">).
 
 =end pod

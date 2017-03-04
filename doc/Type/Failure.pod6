@@ -28,49 +28,45 @@ failure to throw.
 
 Defined as:
 
-    method handled(Failure:D:) returns Bool:D
-
-Usage:
-
-    FAILURE.handled
+    method handled(Failure:D: --> Bool:D)
 
 Returns C<True> for handled failures, C<False> otherwise.
+
+    sub f() { fail }; my $v = f; say $v.handled; # OUTPUT: «False␤»
 
 =head2 method exception
 
 Defined as:
 
-    method exception(Failure:D:) returns Exception
-
-Usage:
-
-    FAILURE.exception
+    method exception(Failure:D: --> Exception)
 
 Returns the L<Exception> object that the failure wraps.
+
+    sub f() { fail }; my $v = f; $v.Exception;
+    CATCH { default { put .^name, ': ', .Str } };
+    # OUTPUT: «X::AdHoc: Failed␤»
 
 =head2 method Bool
 
 Defined as:
 
-    multi method Bool(Failure:D:) returns Bool:D
-
-Usage:
-
-    FAILURE.Bool
+    multi method Bool(Failure:D: --> Bool:D)
 
 Returns C<False>, and marks the failure as handled.
+
+    sub f() { fail }; my $v = f; say $v.handled; $v.Bool; say $v.handled;
+    # OUTPUT: «False␤
+    # True␤»
 
 =head2 method defined
 
 Defined as:
 
-    multi method defined(Failure:D:) returns Bool:D
-
-Usage:
-
-    FAILURE.defined
+    multi method defined(Failure:D: --> Bool:D)
 
 Returns C<False> (failures are officially undefined), and marks
 the failure as handled.
+
+    sub f() { fail }; my $v = f; say $v.defined; # OUTPUT: «False␤»
 
 =end pod

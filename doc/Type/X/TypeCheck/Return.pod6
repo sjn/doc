@@ -10,11 +10,9 @@ Thrown when a return type check fails.
 
 For example
 
-    sub f() returns Int { "foo" }
+    sub f(--> Int) { "foo" }
     f();
-
-Dies with
-
-    Type check failed for return value; expected 'Int' but got 'Str'
+    CATCH { default { put .^name, ': ', .Str } };
+    # OUTPUT: «X::TypeCheck::Return: Type check failed for return value; expected Int but got Str ("foo")␤»
 
 =end pod

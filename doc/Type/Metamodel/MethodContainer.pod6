@@ -4,7 +4,7 @@
 
 =SUBTITLE Metaobject that supports storing and introspecting methods
 
-    class Metamodel::MethodContainer { ... }
+    class Metamodel::MethodContainer {}
 
 roles, classes, grammars and enums can contain methods. This role implements
 the API around storing and introspecting them.
@@ -14,7 +14,7 @@ the API around storing and introspecting them.
     # don't do that, because it changes type Int globally.
     # just for demonstration purposes.
     Int.^add_method('double', method ($x:) { 2 * $x });
-    say 21.double;
+    say 21.double; # OUTPUT: «42␤»
 
 =head1 Methods
 
@@ -45,12 +45,12 @@ The returned list contains objects of type L<Method>, which you can
 use to introspect their signatures and call them.
 
 Some introspection method-look-alikes like L<C<WHAT>|/language/mop#WHAT> will
-not show up, although they are present in any Perl 6 object. They are handled
+not show up, although they are present in any Perl 6 object. They are handled
 at the grammar level and will likely remain so for bootstrap reasons.
 
 =head2 method method_table
 
-    method method_table(Metamodel::MethodContainer:D: $obj) returns Hash:D
+    method method_table(Metamodel::MethodContainer:D: $obj --> Hash:D)
 
 Returns a hash where the keys are method names, and the values are
 L<methods|/type/Method>. Note that the keys are the names by which the methods

@@ -4,21 +4,23 @@
 
 =SUBTITLE Dual Value Floating-point number and String
 
-    class NumStr is Num is Str
+    class NumStr is Num is Str { }
 
 The dual value types (often referred to as L<allomorphs|/language/glossary#Allomorph>)
 allow for the representation of a value as both a string and a numeric type, typically
 they will be created for you when the context is "stringy" but they can be determined
 to be numbers, such as in some L<quoting constructs|/language/quoting>:
 
-    my $f = <42.1e0>; say $f.WHAT; # (NumStr)
+    my $f = <42.1e0>; say $f.WHAT; # OUTPUT: «(NumStr)␤»
 
-A C<NumStr> can be used interchangeably where one might use a L<Str|/type/Str> or a
-L<Num|/type/Num> :
+As a subclass of both L«C<Num>|/type/Num» and L«C<Str>|/type/Str», a C<NumStr>
+will be accepted where either is expected. However, C<NumStr> does not share
+object identity with C<Num>- or C<Str>-only variants:
 
-    my $f = <42.1e0>;
-    my $i = $f + 0.1e0;
-    my $s = $f ~ " and a bit more";
+    my $num-str = <42e10>;
+    my Num $num = $num-str; # OK!
+    my Str $str = $num-str; # OK!
+    say 42e10 ∈ <42e10  55  1>; # False; ∈ operator cares about object identity
 
 =head1 Methods
 
@@ -30,8 +32,8 @@ The constructor requires both the C<Num> and the C<Str> value, when constructing
 directly the values can be whatever is required:
 
     my $f = NumStr.new(42.1e0, "forty two and a bit");
-    say +$f; # -> 42.1
-    say ~$f; # -> "forty two and a bit"
+    say +$f; # OUTPUT: «42.1␤»
+    say ~$f; # OUTPUT: «"forty two and a bit"␤»
 
 =head2 method Numeric
 
@@ -63,8 +65,8 @@ coerce to a C<Num> or C<Str> value first:
 
     my $f = NumStr.new(42.1e0, "smaller");
     my $g = NumStr.new(43.1e0, "larger");
-    say $f cmp $g;          # Less
-    say $f.Str cmp $g.Str;  # More
+    say $f cmp $g;          # OUTPUT: «Less␤»
+    say $f.Str cmp $g.Str;  # OUTPUT: «More␤»
 
 =end pod
 

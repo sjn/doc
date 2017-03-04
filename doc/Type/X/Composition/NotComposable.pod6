@@ -11,13 +11,15 @@ cannot be used for composition (roles and enums are generally OK).
 
 For example
 
-    class A { }
-    class B does A { }
+=for code :skip-test
+class A { }
+class B does A { }
 
 dies with
 
-    ===SORRY!===
-    ␤A is not composable, so B cannot compose it
+=for code :skip-test
+===SORRY!===
+␤A is not composable, so B cannot compose it
 
 because C<does> is reserved for role composition, and C<A> is not a role,
 nor something that knows how to turn into a role.
@@ -29,13 +31,13 @@ The fix is to either make C<A> a role, or use inheritance
 
 =head2 method target-name
 
-    method target-name() returns Str:D
+    method target-name(--> Str:D)
 
 Returns the name of the type that should be composed, but failed.
 
 =head2 method composer
 
-    method composer() returns Mu
+    method composer(--> Mu)
 
 Returns the type that should be composed into the target, but which isn't a
 role.

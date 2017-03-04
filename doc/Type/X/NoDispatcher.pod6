@@ -12,17 +12,15 @@ thrown.
 
 For example
 
-    nextsame
-
-in the mainline dies with
-
-    nextsame is not in the dynamic scope of a dispatcher
+    nextsame; # In the mainline
+    CATCH { default { put .^name, ': ', .Str } };
+    # OUTPUT: «X::NoDispatcher: nextsame is not in the dynamic scope of a dispatcher␤»
 
 =head1 Methods
 
 =head2 method redispatcher
 
-    method redispatcher() returns Str:D
+    method redispatcher(--> Str:D)
 
 Returns the name of the redispatcher function that did not succeed.
 

@@ -1,4 +1,4 @@
-=begin pod
+=begin pod :tag<perl6>
 
 =TITLE Packages
 
@@ -25,8 +25,9 @@ sigil). This includes:
     $Foo::Bar::baz      # compound identifiers separated by ::
     $Foo::($bar)::baz   # compound identifiers that perform interpolations
     $42                 # numeric names
-    $!                  # certain punctuational variables
+    $!                  # certain punctuation variables
 
+X<|::,package>
 C<::> is used to separate nested package names.
 
 =head2 Package-qualified names
@@ -51,28 +52,35 @@ not-yet-declared package name.
 
 =head1 Pseudo-packages
 
+X«|MY (package)»X«|OUR (package)»X«|CORE (package)»X«|GLOBAL (package)»X«|PROCESS (package)»X«|COMPILING(package)»
 The following pseudo-package names are reserved at the front of a name:
 
-    MY          # Symbols in the current lexical scope (aka $?SCOPE)
-    OUR         # Symbols in the current package (aka $?PACKAGE)
-    CORE        # Outermost lexical scope, definition of standard Perl
-    GLOBAL      # Interpreter-wide package symbols, really UNIT::GLOBAL
-    PROCESS     # Process-related globals (superglobals)
-    COMPILING   # Lexical symbols in the scope being compiled
+=begin table
+    MY          Symbols in the current lexical scope (aka $?SCOPE)
+    OUR         Symbols in the current package (aka $?PACKAGE)
+    CORE        Outermost lexical scope, definition of standard Perl
+    GLOBAL      Interpreter-wide package symbols, really UNIT::GLOBAL
+    PROCESS     Process-related globals (superglobals). The last place dynamic variable
+                lookup will look.
+    COMPILING   Lexical symbols in the scope being compiled
+=end table
 
+X«|CALLER (package)»X«|CALLERS (package)»X«|DYNAMIC (package)»X«|OUTER (package)»X«|OUTERS (package)»X«|LEXICAL (package)»X«|UNIT (package)»X«|SETTING (package)»X«|PARENT (package)»X«|CLIENT (package)»
 The following relative names are also reserved but may be used
 anywhere in a name:
 
-    CALLER      # Contextual symbols in the immediate caller's lexical scope
-    CALLERS     # Contextual symbols in any caller's lexical scope
-    DYNAMIC     # Contextual symbols in my or any caller's lexical scope
-    OUTER       # Symbols in the next outer lexical scope
-    OUTERS      # Symbols in any outer lexical scope
-    LEXICAL     # Contextual symbols in my or any outer's lexical scope
-    UNIT        # Symbols in the outermost lexical scope of compilation unit
-    SETTING     # Lexical symbols in the unit's DSL (usually CORE)
-    PARENT      # Symbols in this package's parent package (or lexical scope)
-    CLIENT      # The nearest CALLER that comes from a different package
+=begin table
+    CALLER      Contextual symbols in the immediate caller's lexical scope
+    CALLERS     Contextual symbols in any caller's lexical scope
+    DYNAMIC     Contextual symbols in my or any caller's lexical scope
+    OUTER       Symbols in the next outer lexical scope
+    OUTERS      Symbols in any outer lexical scope
+    LEXICAL     Contextual symbols in my or any outer's lexical scope
+    UNIT        Symbols in the outermost lexical scope of compilation unit
+    SETTING     Lexical symbols in the unit's DSL (usually CORE)
+    PARENT      Symbols in this package's parent package (or lexical scope)
+    CLIENT      The nearest CALLER that comes from a different package
+=end table
 
 The file's scope is known as C<UNIT>, but there are one or more lexical scopes
 outside of that corresponding to the linguistic setting (often known as the
@@ -95,7 +103,7 @@ C<::($expr)> where you'd ordinarily put a package or variable name. The
 string is allowed to contain additional instances of C<::>, which will be
 interpreted as package nesting. You may only interpolate entire names,
 since the construct starts with C<::>, and either ends immediately or is
-continued with another C<::> outside the parens. Most symbolic references
+continued with another C<::> outside the parentheses. Most symbolic references
 are done with this notation:
 
     $foo = "Bar";
@@ -172,5 +180,12 @@ starts in the C<GLOBAL> package, so "our" declarations in the mainline code
 go into that package by default. Process-wide variables live in the
 C<PROCESS> package. Most predefined globals such as C<$*UID> and C<$*PID>
 are actually process globals.
+
+=head1 Version
+
+X<|.^ver,package>
+Any package may have a L<Version|/type/Version> object attached to it. This
+object can be accessed via C<$?PACKAGE.^ver> or from outside the package
+C<Fully::Qualified::Name.^ver>.
 
 =end pod

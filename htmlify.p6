@@ -2,7 +2,9 @@
 use v6;
 
 # This script isn't in bin/ because it's not meant to be installed.
-# For syntax highlighting, needs pygmentize version 2.0 or newer installed
+# For syntax highlighting, needs node.js installed.
+# Please run make init-highlights to automatically pull in the highlighting
+# grammar and build the highlighter.
 #
 # for doc.perl6.org, the build process goes like this:
 # * a cron job on hack.p6c.org as user 'doc.perl6.org' triggers the rebuild.
@@ -20,14 +22,45 @@ use v6;
 
 BEGIN say 'Initializing ...';
 
+use JSON::Fast;
 use Pod::To::HTML;
 use URI::Escape;
+
 use lib 'lib';
+use Perl6::Documentable::Registry;
 use Perl6::TypeGraph;
 use Perl6::TypeGraph::Viz;
-use Perl6::Documentable::Registry;
 use Pod::Convenience;
 use Pod::Htmlify;
+use OO::Monitors;
+
+{
+    my monitor PathChecker {
+        has %!seen-paths;
+        method check($path) {
+            note "$path got badchar" if $path.contains(any(qw[\ % ? & = # + " ' : ~ < >]));
+            note "$path got empty filename" if $path.split('/')[*-1] eq '.html';
+            note "duplicated path $path" if %!seen-paths{$path}:exists;
+            %!seen-paths{$path}++;
+        }
+    }
+    my $path-checker = PathChecker.new;
+    &spurt.wrap(sub (|c) {
+        $path-checker.check(c[0]);
+        callsame
+    });
+}
+
+monitor UrlLog {
+    has @.URLS;
+    method log($url) { @!URLS.push($url) }
+}
+my $url-log = UrlLog.new;
+&rewrite-url.wrap(sub (|c){
+    $url-log.log(my \r = callsame);
+#    die c if r eq '$SOLIDUSsyntax$SOLIDUS#class_Slip';
+    r
+});
 
 use experimental :cached;
 
@@ -38,10 +71,12 @@ my %p5to6-functions;
 
 # TODO: Generate menulist automatically
 my @menu =
-    ('language',''         ) => (),
-    ('type', 'Types'       ) => <basic composite domain-specific exceptions>,
-    ('routine', 'Routines' ) => <sub method term operator>,
-    ('programs', ''        ) => (),
+    ('language',''          ) => (),
+    ('type', 'Types'        ) => <basic composite domain-specific exceptions>,
+    ('routine', 'Routines'  ) => <sub method term operator>,
+    ('programs', ''         ) => (),
+    ('examples', 'Examples' ) => (),
+    ('webchat', 'Chat with us') => (),
 #    ('module', 'Modules'   ) => (),
 #    ('formalities',''      ) => ();
 ;
@@ -80,7 +115,7 @@ sub header-html($current-selection = 'nothing selected') is cached {
 
 sub p2h($pod, $selection = 'nothing selected', :$pod-path = 'unknown') {
     pod2html $pod,
-        :url(&url-munge),
+        :url(&rewrite-url),
         :$head,
         :header(header-html $selection),
         :footer(footer-html($pod-path)),
@@ -109,13 +144,18 @@ sub recursive-dir($dir) {
 # --parallel=10: perform some parts in parallel (with width/degree of 10)
 # much faster, but with the current state of async/concurrency
 # in Rakudo you risk segfaults, weird errors, etc.
+my $proc;
+my $proc-supply;
+my $proc-prom;
+my $coffee-exe = './highlights/node_modules/coffee-script/bin/coffee';
 sub MAIN(
     Bool :$typegraph = False,
     Int  :$sparse,
     Bool :$disambiguation = True,
     Bool :$search-file = True,
     Bool :$no-highlight = False,
-    Bool :$no-inline-python = False,
+    Bool :$force-proc-async = False,
+    Bool :$no-proc-async    = False,
     Int  :$parallel = 1,
 ) {
 
@@ -127,7 +167,25 @@ sub MAIN(
     #       the installation directory (share/man).
     #
     #       Then they can be copied to doc/Programs.
-
+    if !$no-highlight {
+        if ! $coffee-exe.IO.f {
+            say "Could not find $coffee-exe, did you run `make init-highlights`?";
+            exit 1;
+        }
+        if $*DISTRO eq 'macosx' and !$force-proc-async {
+            warn-user Q/"\$*DISTRO == macos, so Proc::Async will not be used.
+            due to freezes from using Proc::Async.
+            For more info see Issue #1129/;
+            $no-proc-async := True;
+        }
+        if $no-proc-async {
+            warn-user "Proc::Async is disabled, this build will take a very long time.";
+        }
+        else {
+            $proc = Proc::Async.new($coffee-exe, './highlights/highlight-filename-from-stdin.coffee', :r, :w);
+            $proc-supply = $proc.stdout.lines;
+        }
+    }
     say 'Creating html/subdirectories ...';
 
     for <programs type language routine images syntax> {
@@ -145,7 +203,7 @@ sub MAIN(
     process-pod-dir 'Language', :$sparse, :$parallel;
     process-pod-dir 'Type', :sorted-by{ %h{.key} // -1 }, :$sparse, :$parallel;
 
-    highlight-code-blocks(:use-inline-python(!$no-inline-python)) unless $no-highlight;
+    highlight-code-blocks(:no-proc-async($no-proc-async)) unless $no-highlight;
 
     say 'Composing doc registry ...';
     $*DR.compose;
@@ -178,24 +236,8 @@ sub MAIN(
     if $sparse || !$search-file || !$disambiguation {
         say "This is a sparse or incomplete run. DO NOT SYNC WITH doc.perl6.org!";
     }
-}
 
-my $precomp-store = CompUnit::PrecompilationStore::File.new(:prefix($?FILE.IO.parent.child("precompiled")));
-my $precomp = CompUnit::PrecompilationRepository::Default.new(store => $precomp-store);
-
-sub extract-pod(IO() $file) {
-    use nqp;
-    # The file name is enough for the id because POD files don't have depends
-    my $id = nqp::sha1(~$file);
-    my $handle = $precomp.load($id,:since($file.modified))[0];
-
-    if not $handle {
-        # precompile it
-        $precomp.precompile($file, $id, :force);
-        $handle = $precomp.load($id)[0];
-    }
-
-    return nqp::atkey($handle.unit,'$=pod')[0];
+    spurt('html/links.txt', $url-log.URLS.sort.unique.join("\n"));
 }
 
 sub process-pod-dir($dir, :&sorted-by = &[cmp], :$sparse, :$parallel) {
@@ -228,11 +270,11 @@ sub process-pod-dir($dir, :&sorted-by = &[cmp], :$sparse, :$parallel) {
         }
 
         if $num %% $parallel {
-            await(@pod-files);
+            await Promise.allof: @pod-files;
             @pod-files = ();
         }
 
-        LAST await(@pod-files);
+        LAST await Promise.allof: @pod-files;
     }
 }
 
@@ -364,15 +406,28 @@ multi write-type-source($doc) {
         note "Type $podname not found in type-graph data";
     }
 
-    my $html-filename = "html" ~ $doc.url ~ ".html";
+    my @parts = $doc.url.split('/', :v);
+    @parts[*-1] = escape-filename @parts[*-1];
+    my $html-filename = "html" ~ @parts.join('/') ~ ".html";
     my $pod-path = pod-path-from-url($doc.url);
     spurt $html-filename, p2h($pod, $what, pod-path => $pod-path);
 }
 
 sub find-references(:$pod!, :$url, :$origin) {
     if $pod ~~ Pod::FormattingCode && $pod.type eq 'X' {
-        register-reference(:$pod, :$origin, :$url);
-    }
+        multi sub recurse-until-str(Str:D $s){ $s }
+        multi sub recurse-until-str(Pod::Block $n){ $n.contents>>.&recurse-until-str().join }
+
+        my $index-name-attr is default(Failure.new('missing index link'));
+        # this comes from Pod::To::HTML and needs to be moved into a method in said module
+        # TODO use method from Pod::To::HTML
+        my $index-text = recurse-until-str($pod).join;
+        my @indices = $pod.meta;
+        $index-name-attr = qq[index-entry{@indices ?? '-' !! ''}{@indices.join('-')}{$index-text ?? '-' !! ''}$index-text].subst('_', '__', :g).subst(' ', '_', :g).subst('%', '%25', :g).subst('#', '%23', :g);
+
+       register-reference(:$pod, :$origin, url => $url ~ '#' ~ $index-name-attr);
+       # register-reference(:$pod, :$origin, :$url);
+}
     elsif $pod.?contents {
         for $pod.contents -> $sub-pod {
             find-references(:pod($sub-pod), :$url, :$origin) if $sub-pod ~~ Pod::Block;
@@ -568,7 +623,7 @@ sub find-definitions(:$pod, :$origin, :$min-level = -1, :$url) {
 
             my $new-head = Pod::Heading.new(
                 :level(@pod-section[$i].level),
-                :contents[pod-link "$subkinds $name",
+                :contents[pod-link "($origin.name()) $subkinds $name",
                     $created.url ~ "#$origin.human-kind() $origin.name()".subst(:g, /\s+/, '_')
                 ]
             );
@@ -581,7 +636,9 @@ sub find-definitions(:$pod, :$origin, :$min-level = -1, :$url) {
                     .match(:g, /:s ^ 'multi'? (sub|method)»/)\
                     .>>[0]>>.Str.unique;
 
-                note "The subkinds of routine $created.name() in $origin.name() cannot be determined."
+                note "The subkinds of routine $created.name() in $origin.name()"
+                        ~ " cannot be determined. Are you sure that routine is"
+                        ~ " actually defined in $origin.name()'s file?"
                     unless @subkinds;
 
                 $created.subkinds   = @subkinds;
@@ -620,19 +677,13 @@ sub write-type-graph-images(:$force, :$parallel) {
         my $viz = Perl6::TypeGraph::Viz.new-for-type($type);
         @type-graph-images.push: $viz.to-file("html/images/type-graph-{$type}.svg", format => 'svg');
         if @type-graph-images %% $parallel {
-            await(@type-graph-images);
-            @type-graph-images = ();
-        }
-
-        @type-graph-images.push: $viz.to-file("html/images/type-graph-{$type}.png", format => 'png', size => '8,3');
-        if @type-graph-images %% $parallel {
-            await(@type-graph-images);
+            await Promise.allof: @type-graph-images;
             @type-graph-images = ();
         }
 
         print '.';
 
-        LAST await(@type-graph-images);
+        LAST await Promise.allof: @type-graph-images;
     }
     say '';
 
@@ -649,17 +700,11 @@ sub write-type-graph-images(:$force, :$parallel) {
                                             :rank-dir('LR'));
         @specialized-visualizations.push: $viz.to-file("html/images/type-graph-{$group}.svg", format => 'svg');
         if @specialized-visualizations %% $parallel {
-            await(@specialized-visualizations);
+            await Promise.allof: @specialized-visualizations;
             @specialized-visualizations = ();
         }
 
-        @specialized-visualizations.push: $viz.to-file("html/images/type-graph-{$group}.png", format => 'png', size => '8,3');
-        if @specialized-visualizations %% $parallel {
-            await(@specialized-visualizations);
-            @specialized-visualizations = ();
-        }
-
-        LAST await(@specialized-visualizations);
+        LAST await Promise.allof: @specialized-visualizations;
     }
 }
 
@@ -713,7 +758,7 @@ sub write-search-file() {
             .pairs.sort({.key}).map: -> (:key($name), :value(@docs)) {
                 qq[[\{ category: "{
                     ( @docs > 1 ?? $kind !! @docs.[0].subkinds[0] ).wordcase
-                }", value: "$name", url: "{@docs.[0].url}" \}]] #"
+                }", value: "$name", url: "{rewrite-url(@docs.[0].url).subst('"', '\"', :g)}" \}]] #"
             }
     }).flat;
 
@@ -725,7 +770,7 @@ sub write-search-file() {
         $_, $url
       );
     });
-    spurt("html/js/search.js", $template.subst("ITEMS", @items.join(",\n") ));
+    spurt("html/js/search.js", $template.subst("ITEMS", @items.join(",\n") ).subst("WARNING", "DO NOT EDIT generated by $?FILE:$?LINE"));
 }
 
 sub write-disambiguation-files() {
@@ -767,7 +812,8 @@ sub write-disambiguation-files() {
                 });
         }
         my $html = p2h($pod, 'routine');
-        spurt "html/$name.subst(/<[/\\]>/,'_',:g).html", $html;
+        spurt "html/{escape-filename $name}.html", $html;
+        # spurt "html/$name.subst(/<[/\\]>/,'_',:g).html", $html;
     }
     say '';
 }
@@ -836,14 +882,15 @@ sub write-main-index(:$kind, :&summary = {Nil}) {
             "s that are documented here as part of the Perl 6 language. " ~
             "Use the above menu to narrow it down topically."
         ),
-        pod-table($*DR.lookup($kind, :by<kind>)\
+        pod-table([[pod-bold('Name'), pod-bold('Declarator'), pod-bold('Source')],
+            $*DR.lookup($kind, :by<kind>)\
             .categorize(*.name).sort(*.key)>>.value
             .map({[
-                .map({.subkinds // Nil}).unique.join(', '),
                 pod-link(.[0].name, .[0].url),
+                .map({.subkinds // Nil}).flat.unique.join(', '),
                 .&summary
-            ]})
-        )
+            ]}).cache.Slip
+       ].flat)
     ), $kind);
 }
 
@@ -878,13 +925,23 @@ sub write-kind($kind) {
                     pod-heading("{.origin.human-kind} {.origin.name}"),
                     pod-block("From ",
                         pod-link(.origin.name,
-                            .origin.url ~ '#' ~ (.subkinds~'_' if .subkinds ~~ /fix/) ~ .name),
+                                 .origin.url ~ '#' ~ (.subkinds~'_' if .subkinds ~~ /fix/) ~
+                                  (
+                                      if .subkinds ~~ /fix/ { '' }
+                                      # It looks really weird, but in reality, it checks the pod content,
+                                      # then extracts a link(e.g. '(Type) routine foo'), then this string
+                                      # splits by space character and we take a correct category name.
+                                      # It works with sub/method/term/routine/*fix types, so all our links
+                                      # here are correct.
+                                      else { .pod[0].contents[0].contents.Str.split(' ')[1] ~ '_'; }
+                                  ) ~ .name.subst(' ', '_')),
                     ),
                     .pod.list,
                 })
             );
             print '.';
-            spurt "html/$kind/$name.subst(/<[/\\]>/,'_',:g).html", p2h($pod, $kind);
+            # spurt "html/$kind/$name.subst(/<[/\\]>/,'_',:g).html", p2h($pod, $kind);
+            spurt "html/$kind/{escape-filename $name}.html", p2h($pod, $kind);
         }
     say '';
 }
@@ -896,46 +953,21 @@ sub write-qualified-method-call(:$name!, :$pod!, :$type!) {
         @$pod,
     );
     return if $name ~~ / '/' /;
-    spurt "html/routine/{$type}.{$name}.html", p2h($p, 'routine');
+    spurt "html/routine/{escape-filename $type}.{escape-filename $name}.html", p2h($p, 'routine');
 }
-
-sub highlight-code-blocks(:$use-inline-python = True) {
-    my $pyg-version = try qx/pygmentize -V/;
-    if $pyg-version && $pyg-version ~~ /^'Pygments version ' (\d\S+)/ {
-        if Version.new(~$0) ~~ v2.0+ {
-            say "pygmentize $0 found; code blocks will be highlighted";
-        }
-        else {
-            say "pygmentize $0 is too old; need at least 2.0";
-            return;
-        }
+sub get-temp-filename {
+    state %seen-temps;
+    my $temp = join '-', %*ENV<USER> // 'u', (^1_000_000).pick, 'pod_to_pyg.pod';
+    while %seen-temps{$temp} {
+        $temp = join '-', %*ENV<USER> // 'u', (^1_000_000).pick, 'pod_to_pyg.pod';
     }
-    else {
-        say "pygmentize not found; code blocks will not be highlighted";
-        return;
+    %seen-temps{$temp}++;
+    $temp;
+}
+sub highlight-code-blocks(:$no-proc-async = False) {
+    unless $no-proc-async {
+        $proc-prom = $proc.start andthen say "Starting highlights worker thread" unless $proc.started;
     }
-
-    my $py = $use-inline-python && try {
-        require Inline::Python;
-        my $inline-py = ::('Inline::Python').new();
-        $inline-py.run(q{
-import pygments.lexers
-import pygments.formatters
-p6lexer = pygments.lexers.get_lexer_by_name("perl6")
-htmlformatter = pygments.formatters.get_formatter_by_name("html")
-
-def p6format(code):
-    return pygments.highlight(code, p6lexer, htmlformatter)
-});
-        $inline-py;
-    }
-    if $py {
-        say "Using syntax highlighting via Inline::Python";
-    }
-    else {
-        say "Error using Inline::Python, falling back to pygmentize: ($!)";
-    }
-
     %*POD2HTML-CALLBACKS = code => sub (:$node, :&default) {
         for @($node.contents) -> $c {
             if $c !~~ Str {
@@ -943,17 +975,29 @@ def p6format(code):
                 return default($node);
             }
         }
-        if $py {
-            return $py.call('__main__', 'p6format', $node.contents.join);
+        my $basename = get-temp-filename();
+        my $tmp_fname = "$*TMPDIR/$basename";
+        spurt $tmp_fname, $node.contents.join;
+        LEAVE try unlink $tmp_fname;
+        my $html;
+        if ! $no-proc-async {
+            my $promise = Promise.new;
+            my $tap = $proc-supply.tap( -> $json {
+                my $parsed-json = from-json($json);
+                if $parsed-json<file> eq $tmp_fname {
+                    $promise.keep($parsed-json<html>);
+                    $tap.close();
+                }
+            } );
+            $proc.say($tmp_fname);
+            await $promise;
+            $html = $promise.result;
         }
         else {
-            my $basename = join '-', %*ENV<USER> // 'u', (^100_000).pick, 'pod_to_pyg.pod';
-            my $tmp_fname = "$*TMPDIR/$basename";
-            spurt $tmp_fname, $node.contents.join;
-            LEAVE try unlink $tmp_fname;
-            my $command = "pygmentize -l perl6 -f html < $tmp_fname";
-            qqx{$command};
+            my $command = qq[$coffee-exe ./highlights/highlight-file.coffee "$tmp_fname"];
+            $html = qqx{$command};
         }
+        $html;
     }
 }
 
@@ -966,4 +1010,8 @@ sub pod-path-from-url($url) {
     return $pod-path;
 }
 
+sub warn-user (Str $warn-text) {
+    my $border = '=' x $warn-text.chars;
+    note "\n$border\n$warn-text\n$border\n";
+}
 # vim: expandtab shiftwidth=4 ft=perl6

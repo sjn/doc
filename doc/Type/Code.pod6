@@ -4,9 +4,9 @@
 
 =SUBTITLE Code object
 
-    class Code is Any does Callable { ... }
+    class Code is Any does Callable {}
 
-C<Code> is the ultimate base class of all code objects in Perl 6. It
+C<Code> is the ultimate base class of all code objects in Perl 6. It
 exposes functionality that all code objects have. While thunks are
 directly of type C<Code>, most code objects (such as those resulting
 from blocks, subroutines or methods) will be of some subclass of C<Code>.
@@ -27,11 +27,7 @@ result of the call is returned.
 
 Defined as:
 
-    method arity(Code:D:) returns Int:D
-
-Usage:
-
-    CODE.arity
+    method arity(Code:D: --> Int:D)
 
 Returns the minimum number of positional arguments that must be passed
 in order to call the code object. Any optional or slurpy parameters in the
@@ -40,19 +36,15 @@ code object's C<Signature> do not contribute, nor do named parameters.
     sub argless() { }
     sub args($a, $b?) { }
     sub slurpy($a, $b, *@c) { }
-    say &argless.arity;             # 0
-    say &args.arity;                # 1
-    say &slurpy.arity;              # 2
+    say &argless.arity;             # OUTPUT: «0␤»
+    say &args.arity;                # OUTPUT: «1␤»
+    say &slurpy.arity;              # OUTPUT: «2␤»
 
 =head2 method count
 
 Defined as:
 
-    method count(Code:D:) returns Real:D
-
-Usage:
-
-    CODE.count
+    method count(Code:D: --> Real:D)
 
 Returns the maximum number of positional arguments that may be passed
 when calling the code object. For code objects that can accept any
@@ -62,48 +54,50 @@ C<count> will return C<Inf>. Named parameters do not contribute.
     sub argless() { }
     sub args($a, $b?) { }
     sub slurpy($a, $b, *@c) { }
-    say &argless.count;             # 0
-    say &args.count;                # 2
-    say &slurpy.count;              # Inf
+    say &argless.count;             # OUTPUT: «0␤»
+    say &args.count;                # OUTPUT: «2␤»
+    say &slurpy.count;              # OUTPUT: «Inf␤»
+
+=head2 of
+
+Defined as:
+
+    method of(Code:D: --> Mu)
+
+Returns the L<return type constraint|/type/Signature#Constraining_Return_Types>
+of the C<Code>:
+
+    say -> () --> Int {}.of; # OUTPUT: «(Int)␤»
 
 =head2 method signature
 
 Defined as:
 
-    multi method signature(Code:D:) returns Signature:D
-
-Usage:
-
-    CODE.signature
+    multi method signature(Code:D: --> Signature:D)
 
 Returns the L<C<Signature>> object for this code object, which describes
 its parameters.
+
+    sub a(Int $one, Str $two) {};
+    say &a.signature; # OUTPUT: «(Int $one, Str $two)␤»
 
 =head2 method Str
 
 Defined as:
 
-    multi method Str(Code:D:) returns Str:D
+    multi method Str(Code:D: --> Str:D)
 
-Usage:
-
-    CODE.Str
-
-Returns the name of the code object.
+Will produce a warning. Use C<.perl> or C<.gist> instead.
 
     sub marine() { }
-    say ~&marine;   # marine
-
+    say ~&marine;    # OUTPUT: «marine␤»
+    say &marine.Str; # OUTPUT: «marine␤»
 
 =head2 method file
 
 Defined as:
 
-    method file(Code:D:) returns Str:D
-
-Usage:
-
-    CODE.file
+    method file(Code:D: --> Str:D)
 
 Returns the name of the file in which the code object was declared.
 
@@ -113,11 +107,7 @@ Returns the name of the file in which the code object was declared.
 
 Defined as
 
-    method line(Code:D:) returns Int:D
-
-Usage:
-
-    CODE.line
+    method line(Code:D: --> Int:D)
 
 Returns the line number in which the code object was declared.
 

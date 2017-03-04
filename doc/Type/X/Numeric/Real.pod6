@@ -11,17 +11,15 @@ C<Rat> fails (due to a number with a nonzero imaginary part, for instance).
 
 For example
 
-    say (1+2i).Int
-
-fails with
-
-    Can not convert 1+2i to Int: imaginary part not zero
+    say (1+2i).Int;
+    CATCH { default { put .^name, ': ', .Str } };
+    # OUTPUT: «X::Numeric::Real: Can not convert 1+2i to Int: imaginary part not zero␤»
 
 =head1 Methods
 
 =head2 method source
 
-    method source() returns Numeric:D
+    method source(--> Numeric:D)
 
 Returns the number that failed to coerce to L<Real>.
 
@@ -33,7 +31,7 @@ Returns the type to which the coercion was attempted.
 
 =head2 method reason
 
-    method reason() returns Str:D
+    method reason(--> Str:D)
 
 Returns the reason that the conversion failed.
 

@@ -1,12 +1,39 @@
-## Contributing
+# Contributing
 
 Your patches to perl6/doc are very welcome.
 
 This document describes how to get started and helps to provide documentation
 that adheres to the common style and formatting guidelines.
 
+Your contributions will be credited in Rakudo release announcement. You name from
+the commit log will be used. If you'd like to be credited under a different name,
+please add it to [CREDITS file](https://github.com/rakudo/rakudo/blob/nom/CREDITS)
+
 If you have any questions regarding contributing to this project, please ask
 in the [#perl6 IRC channel](https://perl6.org/community/irc).
+
+# TABLE OF CONTENTS
+- [General principles](#general-principles)
+- [Documenting types](#documenting-types)
+- [Testing examples](#testing-examples)
+    - [Skipping tests](#skipping-tests)
+- [Debug mode](#debug-mode)
+    - [Invisible index anchors](#invisible-index-anchors)
+    - [Viewport size](#viewport-size)
+    - [Broken links](#broken-links)
+    - [Heading numbering](#heading-numbering)
+- [Reporting bugs](#reporting-bugs)
+- [Website Styles](#website-styles)
+- [Building the documentation](#building-the-documentation)
+    - [Dependency installation](#dependency-installation)
+        - [Rakudo](#rakudo)
+        - [Zef](#zef)
+        - [Pod::To::HTML](#podtohtml)
+        - [Mojolicious / Web Server](#mojolicious--web-server)
+        - [SASS compiler](#sass-compiler)
+        - [pygmentize](#pygmentize)
+        - [Inline::Python](#inlinepython)
+    - [Build and view the documentation](#build-and-view-the-documentation)
 
 ## General principles
 
@@ -16,7 +43,11 @@ in the [#perl6 IRC channel](https://perl6.org/community/irc).
 * Duplicate small pieces of information rather than rely on linking
 * Be explicit about routine signatures. If a method accepts a `*%args`,
   but treats some of them specially, list them separately.
-* Check out [the styleguide](STYLEGUIDE.md) for further ... guidance
+* Check out [the styleguide](STYLEGUIDE.md) for further guidance
+* For website: we support the current and previous major releases of Chrome, Firefox,
+Internet Explorer (Edge), and Safari. Please test layout changes.
+Lacking actual browsers to test in, you can use [browsershots.org](http://browsershots.org)
+or [browserstack.com](http://browserstack.com). Ensure the layout looks OK on mobile.
 
 ## Documenting types
 
@@ -51,18 +82,100 @@ Fill the documentation file `doc/Type/MyFunnyRole.pod6` like this:
 
     =head2 method do-it
 
-        method do-it(Int $how-often) returns Nil:D
+        method do-it(Int $how-often --> Nil:D)
 
     Method description here
 
-        MyFunnyRole.do-it(2);   # example output
+        MyFunnyRole.do-it(2);   # OUTPUT: «example output␤»
 
 
-When documenting a pair of a sub and a method which both do the same thing,
-the heading should be `=head2 routine do-it`, and the next thing should be two
-or more lines with the signatures. Other allowed words instead of `method`
-are `sub`, `trait`, `infix`, `prefix`, `postfix`, `circumfix`,
-`postcircumfix`, `term`.
+When documenting a pair of a sub and a method which both do the same thing, the
+heading should be `=head2 routine do-it`, and the next thing should be two or
+more lines with the signatures. Other allowed words instead of `method` are
+`sub`, `trait`, `infix`, `prefix`, `postfix`, `circumfix`, `postcircumfix`,
+`term`. If you wish to hide a heading from any index prefix it with the empty
+comment `Z<>`.
+
+When providing a code example result or output, use this style:
+
+    # For the result of an expression.
+    1 + 2;     # RESULT: «3»
+    # For the output.
+    say 1 + 3; # OUTPUT: «3␤»
+    # For the explanatory comment
+    do-work;   # We call do-work sub
+
+## Running tests
+
+Any contributions should pass the `make test` target. This insures basic
+integrity of the documentation, and is run automatically by a corresponding
+travis build. Even edits made via the github editor should pass this test.
+
+The repo should also pass `make xtest` most of the time - this includes
+tests about whitespace and spelling that might be difficult to get right
+on an initial commit, and shouldn't be considered to break the build. If
+you're contributing a patch or pull request, please make sure this passes.
+
+## Testing examples
+
+To export examples from all .pod6-files use `make extract-examples`. To run
+individual tests pick the right .p6-file from `examples/` as a parameter to
+`perl6`.
+
+### Skipping tests
+
+Some examples fail with compile time exceptions and would interrupt the test
+for a file. Use the pod-config option `skip-test` to skip them.
+
+    =begin code :skip-test
+        your-example-here();
+    =end code
+
+### Catching expected exception
+
+Some tests will throw exceptions that would stop the execution of the extracted
+test file. Use the pod-option `catch-all` to have a default handler installed
+for a single example.
+
+    =begin code :catch-all
+        exception-generator-here();
+    =end code
+
+## Testing method completeness
+
+To get a list of methods that are found via introspection but not found in any
+pod6 under `doc/Type/`, use `util/list-missing-methods.p6`. It takes a
+directory or filepath as argument and limits the listing to the given file or
+any pod6-files found. All methods listed in `util/ignored-methods.txt` are
+ignored.
+
+## Debug mode
+
+On the right side of the footer you can find [Debug: off]. Click it and reload
+the page to activate debug mode. The state of debug mode will be remembered by
+`window.sessionStorage` and will not survive a browser restart or opening the
+docs in a new tab.
+
+### Invisible index anchors
+
+You can create index entries and invisible anchors with `X<|thing,category>`.
+To make them visible activate debug mode.
+
+### Viewport size
+
+If you change the layout please check different screen sizes. Debug mode will
+display the viewport size in the bottom left corner.
+
+### Broken links
+
+To check for broken links use debug mode. Any spotted broken link will be
+listed under the search input. Please note that some external links may not get
+checked depending on your browser settings.
+
+### Heading numbering
+
+Please check if the headings you add are of sound structure. You can use debug mode
+to display heading numbers.
 
 ## Reporting bugs
 
@@ -70,12 +183,17 @@ Report issues at https://github.com/perl6/doc/issues. You can use the
 following labels when tagging tickets:
 
 * site   - presentation issue with the website (e.g. invalid HTML)
-* docs   - missing or incorrect documentation
+* docs   - missing or incorrect documentation (use 'NOTSPECCED' instead, if this is for a feature present in a compiler, but not in the Perl 6 test suite)
 * build  - scripts or libraries that generate the site
-* search - the search component
+* search - the search component, either for items that are on the site but not searchable, or for search functionality)
+
+Contributors may also specify one of the following tags.
 
 * LHF    - for a beginner to work on
-* big    - a big issue, may require some research
+* big    - a big issue, requires research or consensus
+
+If you would like to contribute documentation or other bug fixes, please use
+github's Pull request feature.
 
 ## Website Styles
 
@@ -94,61 +212,38 @@ Assuming that you have already forked and cloned the
 you probably want to do is to build the documentation on your local
 computer.  To do this you will need:
 
-  - Rakudo (the Rakudo Perl 6 implementation)
-  - Panda (the installer for third party Perl 6 modules)
+  - Perl 6 (e.g., the Rakudo Perl 6 implementation)
+  - zef (the installer for third party Perl 6 modules)
   - `Pod::To::HTML` (Perl 6 module for converting Pod objects to HTML)
   - [graphviz](http://www.graphviz.org/) (`sudo apt-get install graphviz` on Debian/Ubuntu)
   - [Mojolicious](https://metacpan.org/pod/Mojolicious)
     (optional; a Perl 5 web framework; it allows you to run a web
     app locally to display the docs)
-  - pygmentize (optional; a program to add syntax highlighting to code
-    examples)
-  - `Inline::Python` (optional; run Python code from within Perl 6,
-    necessary for faster execution of pygmentize)
+  - [SASS](http://sass-lang.com/) Compiler
+  - [highlights](https://github.com/perl6/atom-language-perl6) (optional; requires
+    only `nodejs` and at least GCC-4.8 on Linux to be installed. Running `make` will set everything up for you.)
 
 ### Dependency installation
 
 #### Rakudo
 
-Install Rakudo via [rakudobrew](https://github.com/tadzik/rakudobrew).
+You need Perl 6 installed. You can install the Rakudo Perl 6 compiler by
+downloading the latest Rakudo Star release from
+[rakudo.org/downloads/star/](http://rakudo.org/downloads/star/)
 
-Clone the `rakudobrew` repository
+#### Zef
 
-    $ git clone https://github.com/tadzik/rakudobrew ~/.rakudobrew
-
-and add `rakudobrew` to your `PATH` (also add this line to e.g. `~/.profile`):
-
-    $ export PATH=~/.rakudobrew/bin:$PATH
-
-To build the Rakudo Perl 6 implementation with the MoarVM backend, simply
-run
-
-    $ rakudobrew build moar
-
-If everything is set up correctly, the executable `perl6` should be in your
-`PATH`.  As a simple test, run `perl6` and see if the
-[REPL](http://en.wikipedia.org/wiki/Read-eval-print_loop) prompt appears:
-
-    $ perl6
-    >
-
-Exit the REPL by pressing `Ctrl-d` or typing `exit` at the prompt.
-
-#### Panda
-
-After `rakudobrew` is installed, installing `panda` is very easy:
-
-    $ rakudobrew build panda
-
-Now the `panda` command should be available.
+[Zef](https://modules.perl6.org/repo/zef) is a Perl 6 module installer. If you
+installed Rakudo Star package, it should already be installed. Feel free to
+use any other module installer for the modules needed (see below).
 
 #### Pod::To::HTML
 
-The program which builds the HTML version of the documentation
+The program that builds the HTML version of the documentation
 (`htmlify.p6`) uses `Pod::To::HTML` to convert Pod structures into HTML.
-Install `Pod::To::HTML` like so:
+You'll also need `Pod::To::BigPage`. Install these modules like so:
 
-    $ panda install Pod::To::HTML
+    $ zef install Pod::To::HTML Pod::To::BigPage
 
 #### Mojolicious / Web Server
 
@@ -166,10 +261,19 @@ install this now:
 
     $ cpanm -vn Mojolicious
 
-If you also plan on modifying the SASS stylesheets, install these modules to
-enable SASS processor:
+#### SASS Compiler
 
-    $ cpanm -vn CSS::Minifier::XS CSS::Sass Mojolicious::Plugin::AssetPack
+To build the styles, you need to have a SASS compiler. You can either install
+the `sass` command
+
+    $ sudo apt-get install ruby-sass
+
+or the [CSS::Sass Perl 5 module](https://modules.perl6.org/repo/CSS::Sass)
+
+    $ cpanm -vn CSS::Sass Mojolicious::Plugin::AssetPack
+
+The SASS files are compiled when you run `make html`, or `make sass`, or
+start the development webserver (`./app-start`).
 
 #### pygmentize
 
@@ -216,9 +320,9 @@ On Fedora, install the `python-devel` package:
 
     sudo yum install python-devel
 
-Use `panda` to install the `Inline::Python` module:
+Use `zef` to install the `Inline::Python` module:
 
-    $ panda install Inline::Python
+    $ zef install Inline::Python
 
 ### Build and view the documentation
 
